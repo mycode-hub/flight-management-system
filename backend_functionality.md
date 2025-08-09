@@ -79,7 +79,7 @@ A JSON array of strings, where each string is an airport name.
 
 ---
 
-## 5. Booking API (`/api/v1/booking`)
+## 5. Booking API (`/api/v1`)
 
 This endpoint handles the critical process of booking a flight. **This endpoint requires a valid JWT token for access.**
 
@@ -87,21 +87,23 @@ This endpoint handles the critical process of booking a flight. **This endpoint 
 
 The current implementation uses a simplified, single-phase booking process for immediate confirmation. It is designed to be highly concurrent and prevent overbooking.
 
-**Endpoint:** `POST /api/v1/booking`
+| Method   | Endpoint                | Description                               | Request Body Example                               |
+| :------- | :---------------------- | :---------------------------------------- | :------------------------------------------------- |
+| `POST`   | `/booking`              | Creates a new booking for a flight.       | `{"flight_id": "flight-uuid", "seats": 2}`         |
+| `GET`    | `/bookings`             | Gets a list of the current user's bookings. | (None)                                             |
+| `DELETE` | `/bookings/{booking_id}`| Cancels a booking.                        | (None)                                             |
 
-**Request Body:**
-
-| Field       | Type    | Description                               |
-| :---------- | :------ | :---------------------------------------- |
-| `flight_id` | UUID    | The ID of the flight to be booked.        |
-| `seats`     | integer | The number of seats to book.              |
-
-**Concurrency-Safe Workflow:**
+**Concurrency-Safe Workflow (Create Booking):**
 1.  The system first checks if the requested flight exists in the Redis cache.
 2.  It then uses a Redis transaction (`pipeline` with `WATCH`) to atomically check the number of available seats.
 3.  If enough seats are available, it decrements the seat counter in Redis and updates the corresponding flight Hash. This entire operation is atomic, meaning it's safe from race conditions.
 4.  Only after the Redis transaction succeeds does the system write the final booking record to the PostgreSQL database with a status of **`CONFIRMED`**. The `user_id` is taken from the JWT token.
 5.  If the Redis transaction fails (e.g., because the seat count changed mid-operation), the request is rejected with a `409 Conflict` status, and the user is asked to try again.
+
+**Cancel Booking Workflow:**
+1.  The system verifies that the booking exists and belongs to the authenticated user.
+2.  It updates the booking status to `CANCELLED` in the database.
+3.  It atomically increments the seat counter in Redis to make the seats available again.
 
 ### Planned Feature: Mock Payment Integration
 

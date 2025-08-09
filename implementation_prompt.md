@@ -125,7 +125,49 @@ app/
 
 ### Booking (`/api/v1`)
 
+### Booking (`/api/v1`)
+
 *   `POST /api/v1/booking`: Creates a new booking for a flight.
+*   `GET /api/v1/bookings`: Gets a list of the current user's bookings.
+*   `DELETE /api/v1/bookings/{booking_id}`: Cancels a booking.
+
+---
+
+# 5. Frontend Implementation
+
+The frontend is a React application with the following structure:
+
+```
+frontend/
+├───public/
+└───src/
+    ├───components/
+    │   ├───FlightResults.tsx
+    │   ├───Header.tsx
+    │   ├───SearchForm.tsx
+    │   └───PrivateRoute.tsx
+    ├───pages/
+    │   ├───AdminPage.tsx
+    │   ├───BookingPage.tsx
+    │   ├───HomePage.tsx
+    │   ├───LoginPage.tsx
+    │   ├───RegisterPage.tsx
+    │   └───MyBookingsPage.tsx
+    ├───services/
+    │   └───api.ts
+    └───types/
+        └───index.ts
+```
+
+## 5.1. Key Components
+
+*   **`SearchForm.tsx`:** Provides the UI for searching for flights, including autosuggestions for the source and destination.
+*   **`FlightResults.tsx`:** Displays the results of a flight search.
+*   **`AdminPage.tsx`:** Provides a UI for adding single flights and for bulk uploading flights from a CSV file.
+*   **`LoginPage.tsx` & `RegisterPage.tsx`:** Handle user authentication.
+*   **`PrivateRoute.tsx`:** A component that protects routes from unauthenticated access.
+*   **`MyBookingsPage.tsx`:** Displays a list of the user's bookings and allows them to cancel bookings.
+
 
 ---
 
