@@ -50,7 +50,7 @@ const MyBookingsPage: React.FC = () => {
               <td>{booking.seats}</td>
               <td>{booking.status}</td>
               <td>
-                {booking.status !== 'CANCELLED' && booking.status !== 'FAILED' && booking.status !== 'PENDING' && (
+                {booking.status === 'CONFIRMED' && (
                   <button
                     className="btn btn-danger"
                     onClick={() => handleCancelBooking(booking.id)}
