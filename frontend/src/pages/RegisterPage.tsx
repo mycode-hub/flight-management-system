@@ -13,8 +13,8 @@ const RegisterPage: React.FC = () => {
     try {
       await register(username, password);
       navigate('/login');
-    } catch (err) {
-      setError('Error registering user. Please try again.');
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 

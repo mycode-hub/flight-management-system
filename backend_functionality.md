@@ -94,28 +94,19 @@ The current implementation uses a simplified, single-phase booking process for i
 | `DELETE` | `/bookings/{booking_id}`| Cancels a booking.                        | (None)                                             |
 
 **Concurrency-Safe Workflow (Create Booking):**
-1.  The system first checks if the requested flight exists in the Redis cache.
+1.  The system uses a Redis lock to ensure that only one booking process can run at a time for a given flight.
 2.  It then uses a Redis transaction (`pipeline` with `WATCH`) to atomically check the number of available seats.
-3.  If enough seats are available, it decrements the seat counter in Redis and updates the corresponding flight Hash. This entire operation is atomic, meaning it's safe from race conditions.
-4.  Only after the Redis transaction succeeds does the system write the final booking record to the PostgreSQL database with a status of **`CONFIRMED`**. The `user_id` is taken from the JWT token.
-5.  If the Redis transaction fails (e.g., because the seat count changed mid-operation), the request is rejected with a `409 Conflict` status, and the user is asked to try again.
+3.  If enough seats are available, it decrements the seat counter in Redis.
+4.  A booking record is created in the PostgreSQL database with a status of `PENDING`.
+5.  A mock payment service is called, which will randomly succeed or fail.
+6.  If the payment succeeds, the booking status is updated to `CONFIRMED`. The `flight_id` is then published to a Redis Pub/Sub channel named `seat_updates`.
+7.  If the payment fails, the booking status is updated to `FAILED`, and a compensating action is performed to atomically return the seats to Redis.
 
 **Cancel Booking Workflow:**
 1.  The system verifies that the booking exists and belongs to the authenticated user.
 2.  It updates the booking status to `CANCELLED` in the database.
 3.  It atomically increments the seat counter in Redis to make the seats available again.
+4.  The `flight_id` is published to the `seat_updates` channel to trigger a database sync.
 
-### Planned Feature: Mock Payment Integration
-
-To more realistically simulate a real-world scenario, a **Mock Payment Service** is planned. This will transform the booking process into a two-phase operation.
-
-**Phase 1: Reserving the Seats**
-1.  When a booking request is made, the system will reserve the seats using the same atomic Redis transaction.
-2.  It will then create a booking record in the database with a status of **`PENDING`**.
-3.  The system will then make an outbound call to the Mock Payment Service, sending the booking details.
-
-**Phase 2: Handling the Payment Outcome**
-1.  The Mock Payment Service will simulate a delay and a random success/failure outcome.
-2.  It will then call back to our API on a dedicated endpoint (e.g., `POST /payment/callback`) with the result.
-3.  **On Payment Success:** The booking status is updated from `PENDING` to **`CONFIRMED`**. The booking is now final.
-4.  **On Payment Failure:** A critical **compensating action** is performed. The booking status is updated to **`FAILED`**, and the reserved seats are atomically returned to the available seat pool in Redis. This ensures that failed bookings do not result in "lost" inventory.
+**Write-Back Caching:**
+A dedicated background worker subscribes to the `seat_updates` channel. This worker accumulates the flight IDs and periodically (every 12 hours) updates the `available_seats` in the PostgreSQL `flights` table with the latest counts from Redis. This approach minimizes database writes and improves the performance of the booking endpoint.

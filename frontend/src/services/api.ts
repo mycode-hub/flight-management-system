@@ -70,12 +70,29 @@ export const login = async (username: string, password: string): Promise<string>
 };
 
 export const register = async (username: string, password: string): Promise<any> => {
-  const response = await api.post('/api/v1/auth/register', { username, password });
-  return response.data;
+  try {
+    const response = await api.post('/api/v1/auth/register', { username, password });
+    return response.data;
+  } catch (error: any) {
+    if (error.response && error.response.status === 400) {
+      throw new Error('Username already registered.');
+    }
+    throw new Error('An unknown error occurred.');
+  }
 };
 
 export const logout = () => {
   localStorage.removeItem('token');
+};
+
+export const getMyBookings = async (): Promise<Booking[]> => {
+  const response = await api.get('/api/v1/bookings');
+  return response.data;
+};
+
+export const cancelBooking = async (bookingId: string): Promise<Booking> => {
+  const response = await api.delete(`/api/v1/bookings/${bookingId}`);
+  return response.data;
 };
 
 

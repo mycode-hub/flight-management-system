@@ -5,6 +5,7 @@ import BookingPage from './pages/BookingPage';
 import AdminPage from './pages/AdminPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import MyBookingsPage from './pages/MyBookingsPage';
 import Header from './components/Header';
 import PrivateRoute from './components/PrivateRoute';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -30,6 +31,14 @@ function App() {
           element={
             <PrivateRoute>
               <AdminPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/my-bookings"
+          element={
+            <PrivateRoute>
+              <MyBookingsPage />
             </PrivateRoute>
           }
         />

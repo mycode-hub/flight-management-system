@@ -37,5 +37,17 @@ services:
     depends_on:
       - api
 
+  worker:
+    build: .
+    command: python app/worker.py
+    volumes:
+      - ./app:/code/app
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/flights
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
 volumes:
   postgres_data:

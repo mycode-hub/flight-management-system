@@ -28,6 +28,13 @@ const Header: React.FC = () => {
               Admin
             </Link>
           </li>
+          {isAuthenticated && (
+            <li className="nav-item">
+              <Link className="nav-link" to="/my-bookings">
+                My Bookings
+              </Link>
+            </li>
+          )}
         </ul>
         <ul className="navbar-nav ml-auto">
           {isAuthenticated ? (
