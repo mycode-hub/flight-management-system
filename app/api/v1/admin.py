@@ -5,6 +5,7 @@ from app.models import models
 from app.core.database import get_db
 from app.core.redis_client import get_redis
 from app.services import redis_service
+from app.api.dependencies import get_current_admin_user
 from uuid import UUID, uuid4
 import redis
 import csv
@@ -77,7 +78,8 @@ def bulk_upload_flights(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    redis_client: redis.Redis = Depends(get_redis)
+    redis_client: redis.Redis = Depends(get_redis),
+    current_user: models.User = Depends(get_current_admin_user)
 ):
     if file.content_type != 'text/csv':
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a CSV.")
@@ -91,14 +93,14 @@ def bulk_upload_flights(
     return {"job_id": job_id, "status": "PENDING", "message": "File upload successful. Processing in the background."}
 
 @router.get("/flights/bulk-upload/status/{job_id}")
-def get_bulk_upload_status(job_id: str, redis_client: redis.Redis = Depends(get_redis)):
+def get_bulk_upload_status(job_id: str, redis_client: redis.Redis = Depends(get_redis), current_user: models.User = Depends(get_current_admin_user)):
     result = redis_client.get(f"bulk_job:{job_id}")
     if not result:
         raise HTTPException(status_code=404, detail="Job not found.")
     return json.loads(result)
 
 @router.post("/flights", response_model=schemas.Flight)
-def create_flight(flight: schemas.FlightCreate, db: Session = Depends(get_db), redis_client: redis.Redis = Depends(get_redis)):
+def create_flight(flight: schemas.FlightCreate, db: Session = Depends(get_db), redis_client: redis.Redis = Depends(get_redis), current_user: models.User = Depends(get_current_admin_user)):
     db_flight = models.Flight(**flight.dict(), available_seats=flight.total_seats)
     db.add(db_flight)
     db.commit()
@@ -110,14 +112,14 @@ def create_flight(flight: schemas.FlightCreate, db: Session = Depends(get_db), r
     return db_flight
 
 @router.get("/flights/{flight_id}", response_model=schemas.Flight)
-def read_flight(flight_id: UUID, db: Session = Depends(get_db)):
+def read_flight(flight_id: UUID, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_admin_user)):
     db_flight = db.query(models.Flight).filter(models.Flight.id == flight_id).first()
     if db_flight is None:
         raise HTTPException(status_code=404, detail="Flight not found")
     return db_flight
 
 @router.put("/flights/{flight_id}", response_model=schemas.Flight)
-def update_flight(flight_id: UUID, flight: schemas.FlightCreate, db: Session = Depends(get_db), redis_client: redis.Redis = Depends(get_redis)):
+def update_flight(flight_id: UUID, flight: schemas.FlightCreate, db: Session = Depends(get_db), redis_client: redis.Redis = Depends(get_redis), current_user: models.User = Depends(get_current_admin_user)):
     db_flight = db.query(models.Flight).filter(models.Flight.id == flight_id).first()
     if db_flight is None:
         raise HTTPException(status_code=404, detail="Flight not found")
@@ -139,7 +141,7 @@ def update_flight(flight_id: UUID, flight: schemas.FlightCreate, db: Session = D
     return db_flight
 
 @router.delete("/flights/{flight_id}", response_model=schemas.Flight)
-def delete_flight(flight_id: UUID, db: Session = Depends(get_db), redis_client: redis.Redis = Depends(get_redis)):
+def delete_flight(flight_id: UUID, db: Session = Depends(get_db), redis_client: redis.Redis = Depends(get_redis), current_user: models.User = Depends(get_current_admin_user)):
     db_flight = db.query(models.Flight).filter(models.Flight.id == flight_id).first()
     if db_flight is None:
         raise HTTPException(status_code=404, detail="Flight not found")

@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, Integer, String, DateTime, Numeric, BigInteger, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Numeric, BigInteger, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -28,7 +28,7 @@ class Booking(Base):
     __tablename__ = "bookings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     flight_id = Column(UUID(as_uuid=True), ForeignKey("flights.id"))
     seats = Column(Integer, nullable=False)
     status = Column(String, nullable=False, default="PENDING")
@@ -37,3 +37,15 @@ class Booking(Base):
     updated_at = Column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
 
     flight = relationship("Flight", back_populates="bookings")
+    user = relationship("User", back_populates="bookings")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    is_admin = Column(Boolean, default=False)
+
+    bookings = relationship("Booking", back_populates="user")

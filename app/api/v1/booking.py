@@ -4,12 +4,13 @@ from app.schemas import schemas
 from app.models import models
 from app.core.database import get_db
 from app.core.redis_client import get_redis
+from app.api.dependencies import get_current_user
 import redis
 
 router = APIRouter()
 
 @router.post("/booking", response_model=schemas.Booking)
-def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db), redis_client: redis.Redis = Depends(get_redis)):
+def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db), redis_client: redis.Redis = Depends(get_redis), current_user: models.User = Depends(get_current_user)):
     flight_key = f"flight:{booking.flight_id}"
     seat_key = f"flight_seats:{booking.flight_id}"
 
@@ -53,7 +54,7 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
 
     # If Redis was successful, proceed with DB write
     db_booking = models.Booking(
-        user_id=booking.user_id,
+        user_id=current_user.id,
         flight_id=booking.flight_id,
         seats=booking.seats,
         status="CONFIRMED"

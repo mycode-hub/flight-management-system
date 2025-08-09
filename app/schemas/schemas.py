@@ -22,7 +22,6 @@ class Flight(FlightBase):
         from_attributes = True
 
 class BookingBase(BaseModel):
-    user_id: UUID
     flight_id: UUID
     seats: int
 
@@ -31,8 +30,29 @@ class BookingCreate(BookingBase):
 
 class Booking(BookingBase):
     id: UUID
+    user_id: UUID
     status: str
     payment_ref: str | None = None
 
     class Config:
         from_attributes = True
+
+class UserBase(BaseModel):
+    username: str
+
+class UserCreate(UserBase):
+    password: str
+
+class User(UserBase):
+    id: UUID
+    is_admin: bool
+
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: str | None = None

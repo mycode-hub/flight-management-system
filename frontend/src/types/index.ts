@@ -19,7 +19,8 @@ export interface Booking {
 }
 
 export interface BookingCreate {
-  user_id: string;
   flight_id: string;
   seats: number;
+  user_id?: string;
 }
+

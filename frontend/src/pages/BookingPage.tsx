@@ -6,7 +6,6 @@ import { Booking } from '../types';
 const BookingPage: React.FC = () => {
   const { flightId } = useParams<{ flightId: string }>();
   const [seats, setSeats] = useState(1);
-  const [userId, setUserId] = useState('');
   const [booking, setBooking] = useState<Booking | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +16,7 @@ const BookingPage: React.FC = () => {
       return;
     }
     try {
-      const newBooking = await createBooking({ flight_id: flightId, user_id: userId, seats });
+      const newBooking = await createBooking({ flight_id: flightId, seats });
       setBooking(newBooking);
       setError(null);
     } catch (err) {
@@ -35,16 +34,6 @@ const BookingPage: React.FC = () => {
         </div>
       ) : (
         <form onSubmit={handleBooking}>
-          <div className="form-group">
-            <label>User ID</label>
-            <input
-              type="text"
-              className="form-control"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              required
-            />
-          </div>
           <div className="form-group">
             <label>Seats</label>
             <input
