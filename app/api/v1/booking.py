@@ -109,6 +109,9 @@ def cancel_booking(booking_id: UUID, db: Session = Depends(get_db), redis_client
     if db_booking.status == "FAILED":
         raise HTTPException(status_code=400, detail="Cannot cancel a failed booking")
 
+    if db_booking.status == "PENDING":
+        raise HTTPException(status_code=400, detail="Cannot cancel a pending booking")
+
     # Update booking status in DB
     db_booking.status = "CANCELLED"
     
