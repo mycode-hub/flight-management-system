@@ -61,12 +61,14 @@ The application exposes the following REST API endpoints.
 
 ### Admin
 
-| Method | Endpoint                  | Description                                     | Request Body Example                                                                                                                            |
-| :----- | :------------------------ | :---------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST` | `/admin/flights`          | Add a new flight.                               | `{"flight_number": "AI-202", "source": "Delhi", "destination": "Mumbai", "departure_ts": "2025-12-25T10:00:00Z", "arrival_ts": "2025-12-25T12:00:00Z", "total_seats": 150, "price": 7500.00}` |
-| `GET`  | `/admin/flights/{flight_id}` | Get details for a specific flight.              | (None)                                                                                                                                          |
-| `PUT`  | `/admin/flights/{flight_id}` | Update an existing flight's details.            | (Same as POST body)                                                                                                                             |
-| `DELETE`| `/admin/flights/{flight_id}` | Remove a flight from the system.                | (None)                                                                                                                                          |
+| Method | Endpoint                                   | Description                                     | Request Body Example                                                                                                                            |
+| :----- | :----------------------------------------- | :---------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST` | `/admin/flights`                           | Add a new flight.                               | `{"flight_number": "AI-202", "source": "Delhi", "destination": "Mumbai", "departure_ts": "2025-12-25T10:00:00Z", "arrival_ts": "2025-12-25T12:00:00Z", "total_seats": 150, "price": 7500.00}` |
+| `POST` | `/admin/flights/bulk-upload`               | Bulk upload flights from a CSV file.            | (multipart/form-data)                                                                                                                           |
+| `GET`  | `/admin/flights/bulk-upload/status/{job_id}` | Get the status of a bulk upload job.            | (None)                                                                                                                                          |
+| `GET`  | `/admin/flights/{flight_id}`               | Get details for a specific flight.              | (None)                                                                                                                                          |
+| `PUT`  | `/admin/flights/{flight_id}`               | Update an existing flight's details.            | (Same as POST body)                                                                                                                             |
+| `DELETE`| `/admin/flights/{flight_id}`               | Remove a flight from the system.                | (None)                                                                                                                                          |
 
 ### Search
 
