@@ -4,9 +4,20 @@ This document provides a comprehensive overview of all functionalities available
 
 ---
 
-## 1. Admin API (`/admin`)
+## 1. Authentication API (`/api/v1/auth`)
 
-The Admin API provides a suite of tools for managing flights in the system. All endpoints in this section are prefixed with `/admin`.
+This API handles user registration and authentication.
+
+| Method | Endpoint     | Description                                                                                             | Request Body Example                               |
+| :----- | :----------- | :------------------------------------------------------------------------------------------------------ | :------------------------------------------------- |
+| `POST` | `/register`  | Register a new user.                                                                                    | `{"username": "testuser", "password": "password123"}` |
+| `POST` | `/token`     | Log in a user to receive a JWT access token. The token is required for all protected endpoints.         | `username=testuser&password=password123` (form-data) |
+
+---
+
+## 2. Admin API (`/admin`)
+
+The Admin API provides a suite of tools for managing flights in the system. All endpoints in this section are prefixed with `/admin` and **require an admin-level JWT token for access**.
 
 ### Single Flight Management
 
@@ -34,7 +45,7 @@ The process is handled **asynchronously** to prevent HTTP timeouts with large fi
 
 ---
 
-## 2. Flight Search API (`/api/v1/search`)
+## 3. Flight Search API (`/api/v1/search`)
 
 This is the primary endpoint for end-users to find available flights. It is highly optimized for performance using a Redis-first approach.
 
@@ -54,7 +65,7 @@ This is the primary endpoint for end-users to find available flights. It is high
 
 ---
 
-## 3. Airports API (`/api/v1/airports`)
+## 4. Airports API (`/api/v1/airports`)
 
 This endpoint provides a list of all unique airport locations available in the system.
 
@@ -68,9 +79,9 @@ A JSON array of strings, where each string is an airport name.
 
 ---
 
-## 4. Booking API (`/api/v1/booking`)
+## 5. Booking API (`/api/v1/booking`)
 
-This endpoint handles the critical process of booking a flight.
+This endpoint handles the critical process of booking a flight. **This endpoint requires a valid JWT token for access.**
 
 ### Current Implementation: Single-Phase Booking
 
@@ -82,7 +93,6 @@ The current implementation uses a simplified, single-phase booking process for i
 
 | Field       | Type    | Description                               |
 | :---------- | :------ | :---------------------------------------- |
-| `user_id`   | UUID    | The ID of the user making the booking.    |
 | `flight_id` | UUID    | The ID of the flight to be booked.        |
 | `seats`     | integer | The number of seats to book.              |
 
@@ -90,7 +100,7 @@ The current implementation uses a simplified, single-phase booking process for i
 1.  The system first checks if the requested flight exists in the Redis cache.
 2.  It then uses a Redis transaction (`pipeline` with `WATCH`) to atomically check the number of available seats.
 3.  If enough seats are available, it decrements the seat counter in Redis and updates the corresponding flight Hash. This entire operation is atomic, meaning it's safe from race conditions.
-4.  Only after the Redis transaction succeeds does the system write the final booking record to the PostgreSQL database with a status of **`CONFIRMED`**.
+4.  Only after the Redis transaction succeeds does the system write the final booking record to the PostgreSQL database with a status of **`CONFIRMED`**. The `user_id` is taken from the JWT token.
 5.  If the Redis transaction fails (e.g., because the seat count changed mid-operation), the request is rejected with a `409 Conflict` status, and the user is asked to try again.
 
 ### Planned Feature: Mock Payment Integration

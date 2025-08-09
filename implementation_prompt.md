@@ -32,7 +32,7 @@ The application is composed of four main services that are orchestrated with Doc
 
 # 3. Database Schema
 
-The database consists of two main tables: `flights` and `bookings`.
+The database consists of three main tables: `flights`, `bookings`, and `users`.
 
 ## 3.1. `flights` Table
 
@@ -58,13 +58,24 @@ CREATE TABLE flights (
 ```sql
 CREATE TABLE bookings (
   id UUID PRIMARY KEY,
-  user_id UUID NOT NULL,
+  user_id UUID REFERENCES users(id),
   flight_id UUID REFERENCES flights(id),
   seats INT NOT NULL,
   status TEXT NOT NULL, -- PENDING, CONFIRMED, CANCELLED, FAILED
   payment_ref TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+```
+
+## 3.3. `users` Table
+
+```sql
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  hashed_password TEXT NOT NULL,
+  is_admin BOOLEAN DEFAULT FALSE
 );
 ```
 
@@ -82,10 +93,12 @@ app/
 │       ├───admin.py
 │       ├───booking.py
 │       ├───search.py
-│       └───airports.py
+│       ├───airports.py
+│       └───auth.py
 ├───core/
 │   ├───database.py
-│   └───redis_client.py
+│   ├───redis_client.py
+│   └───security.py
 ├───models/
 │   └───models.py
 └───schemas/
@@ -93,6 +106,11 @@ app/
 ```
 
 ## 4.1. API Endpoints
+
+### Authentication (`/api/v1/auth`)
+
+*   `POST /register`: Registers a new user.
+*   `POST /token`: Logs in a user and returns a JWT token.
 
 ### Admin (`/admin`)
 
@@ -122,11 +140,14 @@ frontend/
     ├───components/
     │   ├───FlightResults.tsx
     │   ├───Header.tsx
-    │   └───SearchForm.tsx
+    │   ├───SearchForm.tsx
+    │   └───PrivateRoute.tsx
     ├───pages/
     │   ├───AdminPage.tsx
     │   ├───BookingPage.tsx
-    │   └───HomePage.tsx
+    │   ├───HomePage.tsx
+    │   ├───LoginPage.tsx
+    │   └───RegisterPage.tsx
     ├───services/
     │   └───api.ts
     └───types/
@@ -138,6 +159,8 @@ frontend/
 *   **`SearchForm.tsx`:** Provides the UI for searching for flights, including autosuggestions for the source and destination.
 *   **`FlightResults.tsx`:** Displays the results of a flight search.
 *   **`AdminPage.tsx`:** Provides a UI for adding single flights and for bulk uploading flights from a CSV file.
+*   **`LoginPage.tsx` & `RegisterPage.tsx`:** Handle user authentication.
+*   **`PrivateRoute.tsx`:** A component that protects routes from unauthenticated access.
 
 ---
 
@@ -256,9 +279,16 @@ The application is seeded with an initial dataset of 1,000 flights from the `fli
 3.  **Access the application:**
     *   Frontend: `http://localhost:3000`
     *   Backend API: `http://localhost:8000`
-4.  **Load the initial data:**
+4.  **Register an admin user:**
+    *   Register a new user at `http://localhost:3000/register`.
+    *   Manually set the `is_admin` flag for the new user in the database:
+        ```bash
+        docker compose exec postgres psql -U user -d flights -c "UPDATE users SET is_admin = true WHERE username = '<your-username>';"
+        ```
+5.  **Load the initial data:**
+    *   Log in as the admin user.
     *   Use the bulk upload UI on the admin page (`http://localhost:3000/admin`) to upload the `flights.csv` file.
     *   Alternatively, use the following `curl` command:
         ```bash
-        curl -X POST -F "file=@flights.csv;type=text/csv" http://localhost:8000/admin/flights/bulk-upload
+        curl -X POST -H "Authorization: Bearer <your-token>" -F "file=@flights.csv;type=text/csv" http://localhost:8000/admin/flights/bulk-upload
         ```
