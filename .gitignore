@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# Database
+postgres_data/
+
+# Artifacts & Local Files
+*.zip
+*.png
+GEMINI.md
+
