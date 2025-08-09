@@ -5,3 +5,4 @@ redis
 pydantic
 sqlalchemy
 python-multipart
+pandas

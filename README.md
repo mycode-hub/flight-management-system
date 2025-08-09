@@ -1,11 +1,12 @@
-# Real-Time Flight Management System Backend
+# Real-Time Flight Management System
 
-This project is a production-ready, real-time backend for a flight management and booking system. It is built with Python and FastAPI, designed to handle flight searches, bookings, and administration with high concurrency and reliability.
+This project is a production-ready, real-time backend and frontend for a flight management and booking system. It is built with Python, FastAPI, and React, designed to handle flight searches, bookings, and administration with high concurrency and reliability.
 
 ## Key Features
 
 *   **Admin API:** Endpoints for adding, updating, and deleting flights.
 *   **Flight Search:** A fast, cached search endpoint to find flights by source, destination, and date.
+*   **Airport Autosuggest:** An endpoint to provide a list of available airports for search suggestions.
 *   **Concurrent Booking:** A booking system that safely handles concurrent requests and prevents overbooking by using Redis for atomic seat management.
 *   **Scalable Architecture:** Built on a containerized architecture with Docker, allowing the system to be easily scaled.
 *   **Extensible:** Designed to be extensible with features like real-time notifications and mock payment services.
@@ -13,6 +14,7 @@ This project is a production-ready, real-time backend for a flight management an
 ## Tech Stack
 
 *   **Backend:** Python 3.11, FastAPI
+*   **Frontend:** React, TypeScript
 *   **Database:** PostgreSQL 15
 *   **Cache:** Redis 7
 *   **Containerization:** Docker & Docker Compose
@@ -34,17 +36,17 @@ cd flight-management-system
 ```
 
 **2. Build and run the application:**
-This command will build the Docker images and start the `api`, `postgres`, and `redis` services in detached mode.
+This command will build the Docker images and start the `api`, `frontend`, `postgres`, and `redis` services in detached mode.
 
 ```bash
 docker compose up --build -d
 ```
 
-The API will be available at `http://localhost:8000`.
+The application will be available at `http://localhost:3000`. The API is available at `http://localhost:8000`.
 
 You can check the logs to ensure all services are running correctly:
 ```bash
-docker compose logs -f api
+docker compose logs -f
 ```
 
 **3. Stopping the application:**
@@ -72,6 +74,12 @@ The application exposes the following REST API endpoints.
 | :----- | :--------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
 | `GET`  | `/api/v1/search` | Searches for flights. Results are cached in Redis for 300 seconds. | `source` (str), `destination` (str), `date` (str), `sort` (str, optional: "price" or "fastest"), `limit` (int, optional) |
 
+### Airports
+
+| Method | Endpoint           | Description                                      |
+| :----- | :----------------- | :----------------------------------------------- |
+| `GET`  | `/api/v1/airports` | Returns a list of all unique airport locations. |
+
 ### Booking
 
 | Method | Endpoint          | Description                                                                                                                                                           | Request Body Example                               |
@@ -89,6 +97,7 @@ The project is organized to separate concerns and maintain a clean codebase.
 ├───Dockerfile              # Instructions to build the Docker image for the FastAPI application
 ├───requirements.txt        # Lists the Python packages required for the project
 ├───README.md               # Project overview and instructions
+├───frontend/               # Frontend React application
 └───app/                    # Main directory for all application source code
     ├───main.py             # Entry point of the FastAPI application
     ├───api/

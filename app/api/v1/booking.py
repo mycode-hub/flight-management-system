@@ -52,7 +52,12 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
             raise HTTPException(status_code=409, detail="Seat availability changed, please try again")
 
     # If Redis was successful, proceed with DB write
-    db_booking = models.Booking(**booking.dict(), status="CONFIRMED")
+    db_booking = models.Booking(
+        user_id=booking.user_id,
+        flight_id=booking.flight_id,
+        seats=booking.seats,
+        status="CONFIRMED"
+    )
     db.add(db_booking)
     
     # Also update the master DB record

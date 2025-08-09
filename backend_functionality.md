@@ -54,7 +54,21 @@ This is the primary endpoint for end-users to find available flights. It is high
 
 ---
 
-## 3. Booking API (`/api/v1/booking`)
+## 3. Airports API (`/api/v1/airports`)
+
+This endpoint provides a list of all unique airport locations available in the system.
+
+**Endpoint:** `GET /api/v1/airports`
+
+**Response:**
+A JSON array of strings, where each string is an airport name.
+```json
+["Ahmedabad", "Bangalore", "Chennai", "Delhi", "Hyderabad", "Jaipur", "Kolkata", "Lucknow", "Mumbai", "Pune"]
+```
+
+---
+
+## 4. Booking API (`/api/v1/booking`)
 
 This endpoint handles the critical process of booking a flight.
 

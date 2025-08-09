@@ -54,6 +54,19 @@ def search_flights(
         decoded_hash['available_seats'] = int(available_seats) if available_seats else 0
         
         # Validate and create the Pydantic model
-        flights.append(schemas.Flight(**decoded_hash))
+        try:
+            print(f"DECODED HASH: {decoded_hash}")
+            flights.append(schemas.Flight(**decoded_hash))
+        except Exception as e:
+            print(f"PYDANTIC ERROR: {e}")
+            # This is a fallback for any data that might not have the timezone
+            # In a real application, data cleaning and validation would be more robust
+            try:
+                decoded_hash['departure_ts'] = f"{decoded_hash['departure_ts']}+00:00"
+                decoded_hash['arrival_ts'] = f"{decoded_hash['arrival_ts']}+00:00"
+                flights.append(schemas.Flight(**decoded_hash))
+            except Exception as e2:
+                print(f"Could not parse flight data: {decoded_hash}, error: {e2}")
+                continue
 
     return flights
