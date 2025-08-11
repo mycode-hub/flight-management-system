@@ -60,6 +60,14 @@ def process_bulk_upload(file_contents: bytes, db: Session, redis_client: redis.R
                 db.refresh(db_flight)
                 redis_service.update_flight_in_redis(redis_client, db_flight)
 
+                # Publish update to trigger precomputation
+                update_message = {
+                    "source": db_flight.source,
+                    "destination": db_flight.destination,
+                    "date": db_flight.departure_ts.strftime('%Y-%m-%d')
+                }
+                redis_client.publish("flight_updates", json.dumps(update_message))
+
             except Exception as e:
                 db.rollback()
                 results["failed"] += 1
@@ -109,6 +117,14 @@ def create_flight(flight: schemas.FlightCreate, db: Session = Depends(get_db), r
     # Update Redis cache
     redis_service.update_flight_in_redis(redis_client, db_flight)
     
+    # Publish update to trigger precomputation
+    update_message = {
+        "source": db_flight.source,
+        "destination": db_flight.destination,
+        "date": db_flight.departure_ts.strftime('%Y-%m-%d')
+    }
+    redis_client.publish("flight_updates", json.dumps(update_message))
+    
     return db_flight
 
 @router.get("/flights/{flight_id}", response_model=schemas.Flight)
@@ -138,6 +154,14 @@ def update_flight(flight_id: UUID, flight: schemas.FlightCreate, db: Session = D
     # Add new data to Redis
     redis_service.update_flight_in_redis(redis_client, db_flight)
 
+    # Publish update to trigger precomputation
+    update_message = {
+        "source": db_flight.source,
+        "destination": db_flight.destination,
+        "date": db_flight.departure_ts.strftime('%Y-%m-%d')
+    }
+    redis_client.publish("flight_updates", json.dumps(update_message))
+
     return db_flight
 
 @router.delete("/flights/{flight_id}", response_model=schemas.Flight)
@@ -152,4 +176,13 @@ def delete_flight(flight_id: UUID, db: Session = Depends(get_db), redis_client: 
     # Delete from DB
     db.delete(db_flight)
     db.commit()
+
+    # Publish update to trigger precomputation
+    update_message = {
+        "source": db_flight.source,
+        "destination": db_flight.destination,
+        "date": db_flight.departure_ts.strftime('%Y-%m-%d')
+    }
+    redis_client.publish("flight_updates", json.dumps(update_message))
+    
     return db_flight

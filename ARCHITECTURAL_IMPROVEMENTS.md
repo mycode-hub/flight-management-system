@@ -12,11 +12,11 @@ This document outlines a series of recommended improvements to the flight manage
 *   **Improvement:** Introduce a message queue (like **RabbitMQ** or **Kafka**). When a bulk upload is requested, the API service would simply publish a "ProcessCSV" message to the queue. A separate, dedicated "worker" service would consume these messages and handle the processing.
 *   **Benefit:** This decouples the API from the worker. The API can handle incoming requests quickly without being bogged down by long-running tasks. You can also scale the number of workers independently based on the upload workload.
 
-### 1.2. Move to an Event-Driven Architecture for Bookings
+### 1.2. Event-Driven Architecture for Updates
 
-*   **Current State:** The booking process is a single, synchronous flow.
-*   **Improvement:** Make the booking process asynchronous. When a booking is created, instead of doing everything at once, the API would publish a `BookingCreated` event. Downstream services would then react to this event (e.g., a notifications service, a data analytics service).
-*   **Benefit:** This makes the system more resilient and extensible. If you need to add a new action when a booking happens (like sending an email), you just add a new subscriber to the event, without changing the core booking logic.
+*   **Current State:** The system uses an event-driven architecture for updating the precomputed flight paths. When a flight is created, updated, or deleted, a message is published to a Redis Pub/Sub channel. A background worker listens for these messages and triggers a recalculation of the affected flight paths.
+*   **Improvement:** For a more robust and scalable solution, consider replacing the simple pub/sub model with a full-featured message broker like **RabbitMQ** or **Celery**. This would provide better guarantees for message delivery, retries, and monitoring.
+*   **Benefit:** This would make the update process more resilient to failures and provide better visibility into the status of background tasks.
 
 ### 1.3. Service Decomposition (Microservices)
 

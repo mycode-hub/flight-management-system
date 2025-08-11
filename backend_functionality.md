@@ -47,7 +47,7 @@ The process is handled **asynchronously** to prevent HTTP timeouts with large fi
 
 ## 3. Flight Search API (`/api/v1/search`)
 
-This is the primary endpoint for end-users to find available flights. It is highly optimized for performance using a Redis-first approach.
+This is the primary endpoint for end-users to find available flights. It is highly optimized for performance using a Redis-first approach with precomputed flight paths.
 
 **Endpoint:** `GET /api/v1/search`
 
@@ -58,10 +58,8 @@ This is the primary endpoint for end-users to find available flights. It is high
 | `source`      | string  | The departure location.                          |
 | `destination` | string  | The arrival location.                            |
 | `date`        | string  | The desired date of travel (format: `YYYY-MM-DD`). |
-| `sort`        | string  | (Optional) Sort criteria: `price` or `fastest`. Default: `price`. |
-| `limit`       | integer | (Optional) Number of results to return. Default: `20`. |
 
-**How it Works:** The search endpoint does **not** hit the database directly. Instead, it queries pre-built indexes (Redis Sorted Sets) to get a list of flight IDs already sorted by the desired criteria. It then fetches the complete flight details from Redis Hashes, ensuring a very fast response time.
+**How it Works:** The search endpoint queries Redis for a precomputed list of the top 20 cheapest flight paths (both direct and indirect). It then fetches the full flight details from the database and returns the combined results. This approach is extremely fast as all the complex pathfinding and sorting is done ahead of time.
 
 ---
 

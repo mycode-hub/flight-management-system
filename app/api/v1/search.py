@@ -1,72 +1,42 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
 from app.schemas import schemas
 from app.core.redis_client import get_redis
 from typing import List
 import redis
-from datetime import date
+from datetime import date, timedelta
+from app.api.dependencies import get_db
+from app.models import models
+import json
 
 router = APIRouter()
 
-@router.get("/search", response_model=List[schemas.Flight])
+@router.get("/search", response_model=List[schemas.FlightPath])
 def search_flights(
     source: str, 
     destination: str, 
     date: date, 
-    sort: str = Query("price", enum=["price", "fastest"]),
-    limit: int = 20,
+    db: Session = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis)
 ):
-    # Determine the correct sorted set to use
-    search_key = f"search:{source}:{destination}:{date}:{sort}"
+    redis_key = f"{source}-{destination}-{date.strftime('%Y-%m-%d')}"
+    cached_paths = redis_client.get(redis_key)
     
-    # Get a list of flight IDs from the sorted set
-    # For 'price' and 'fastest' (departure time), lower scores are better.
-    flight_ids = redis_client.zrange(search_key, 0, limit - 1)
-
-    if not flight_ids:
+    if not cached_paths:
         return []
 
-    # Fetch the full flight details for each ID from the Hashes
-    with redis_client.pipeline() as pipe:
-        for flight_id in flight_ids:
-            pipe.hgetall(f"flight:{flight_id.decode('utf-8')}")
+    flight_paths_ids = json.loads(cached_paths)
+    
+    results = []
+    for path_ids in flight_paths_ids:
+        flights_in_path = db.query(models.Flight).filter(models.Flight.id.in_(path_ids)).all()
         
-        flight_hashes = pipe.execute()
+        # Ensure the order is the same as in the path_ids and all flights were found
+        if len(flights_in_path) == len(path_ids):
+            sorted_flights = sorted(flights_in_path, key=lambda f: path_ids.index(str(f.id)))
+            total_price = sum(f.price for f in sorted_flights)
+            results.append(schemas.FlightPath(flights=sorted_flights, total_price=total_price))
 
-    # Fetch the available seats for each flight
-    with redis_client.pipeline() as pipe:
-        for flight_id in flight_ids:
-            pipe.get(f"flight_seats:{flight_id.decode('utf-8')}")
-        
-        available_seats_list = pipe.execute()
+    return results
 
-    # Combine the data into a list of Flight objects
-    flights = []
-    for i, flight_hash in enumerate(flight_hashes):
-        if not flight_hash:
-            continue
-            
-        # Decode hash values from bytes to string
-        decoded_hash = {k.decode('utf-8'): v.decode('utf-8') for k, v in flight_hash.items()}
-        
-        # Add the live seat count
-        available_seats = available_seats_list[i]
-        decoded_hash['available_seats'] = int(available_seats) if available_seats else 0
-        
-        # Validate and create the Pydantic model
-        try:
-            print(f"DECODED HASH: {decoded_hash}")
-            flights.append(schemas.Flight(**decoded_hash))
-        except Exception as e:
-            print(f"PYDANTIC ERROR: {e}")
-            # This is a fallback for any data that might not have the timezone
-            # In a real application, data cleaning and validation would be more robust
-            try:
-                decoded_hash['departure_ts'] = f"{decoded_hash['departure_ts']}+00:00"
-                decoded_hash['arrival_ts'] = f"{decoded_hash['arrival_ts']}+00:00"
-                flights.append(schemas.Flight(**decoded_hash))
-            except Exception as e2:
-                print(f"Could not parse flight data: {decoded_hash}, error: {e2}")
-                continue
 
-    return flights

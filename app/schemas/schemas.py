@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from uuid import UUID
 from datetime import datetime
+from typing import List
 
 class FlightBase(BaseModel):
     flight_number: str
@@ -20,6 +21,10 @@ class Flight(FlightBase):
     
     class Config:
         from_attributes = True
+
+class FlightPath(BaseModel):
+    flights: List[Flight]
+    total_price: float
 
 class BookingBase(BaseModel):
     flight_id: UUID
